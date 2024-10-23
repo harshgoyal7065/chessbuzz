@@ -1,0 +1,127 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            Int            @id @default(autoincrement())
+  username      String         @unique
+  email         String         @unique
+  password      String
+  profile       Profile?
+  comments      Comment[]
+  role          Role           @default(USER)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  notifications Notification[]
+}
+
+model Profile {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @unique
+  user      User     @relation(fields: [userId], references: [id])
+  bio       String?
+  avatarUrl String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Player {
+  id             Int                     @id @default(autoincrement())
+  name           String
+  country        String
+  rating         Int
+  matchesAsWhite Match[]                 @relation("MatchesAsWhite")
+  matchesAsBlack Match[]                 @relation("MatchesAsBlack")
+  tournaments    TournamentParticipant[]
+}
+
+model Tournament {
+  id           Int                     @id @default(autoincrement())
+  name         String
+  startDate    DateTime
+  endDate      DateTime
+  prizeFund    Float
+  participants TournamentParticipant[]
+  matches      Match[]
+  createdAt    DateTime                @default(now())
+  updatedAt    DateTime                @updatedAt
+}
+
+model TournamentParticipant {
+  id           Int        @id @default(autoincrement())
+  playerId     Int
+  tournamentId Int
+  player       Player     @relation(fields: [playerId], references: [id])
+  tournament   Tournament @relation(fields: [tournamentId], references: [id])
+  rank         Int?
+}
+
+model Match {
+  id             Int              @id @default(autoincrement())
+  whitePlayerId  Int
+  blackPlayerId  Int
+  whitePlayer    Player           @relation("MatchesAsWhite", fields: [whitePlayerId], references: [id])
+  blackPlayer    Player           @relation("MatchesAsBlack", fields: [blackPlayerId], references: [id])
+  result         MatchResult
+  moves          Move[]
+  tournamentId   Int?
+  tournament     Tournament?      @relation(fields: [tournamentId], references: [id])
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  Comment        Comment[]
+  LiveCommentary LiveCommentary[]
+}
+
+enum MatchResult {
+  WHITE_WIN
+  BLACK_WIN
+  DRAW
+  IN_PROGRESS
+}
+
+model Move {
+  id        Int      @id @default(autoincrement())
+  moveNo    Int
+  notation  String
+  matchId   Int
+  match     Match    @relation(fields: [matchId], references: [id])
+  createdAt DateTime @default(now())
+}
+
+model Comment {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  content   String
+  matchId   Int
+  match     Match    @relation(fields: [matchId], references: [id])
+  createdAt DateTime @default(now())
+}
+
+model LiveCommentary {
+  id        Int      @id @default(autoincrement())
+  matchId   Int
+  match     Match    @relation(fields: [matchId], references: [id])
+  content   String
+  time      DateTime @default(now())
+  createdAt DateTime @default(now())
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+enum Role {
+  ADMIN
+  USER
+}
